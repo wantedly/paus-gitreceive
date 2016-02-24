@@ -5,7 +5,7 @@ set -e
 BASE_DIR=`pwd`
 # https://github.com/docker/docker/issues/8395#issuecomment-57918396
 HOST_IP=`ip route show 0.0.0.0/0 | grep -Eo 'via \S+' | awk '{ print $2 }'`
-export DOCKER_HOST=tcp://$HOST_IP:2375
+export DOCKER_HOST=tcp://$HOST_IP:2377
 export ETCDCTL_ENDPOINT=http://$HOST_IP:2379
 
 # dtan4-paus-edc8df8
