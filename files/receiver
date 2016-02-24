@@ -9,7 +9,8 @@ export DOCKER_HOST=tcp://$HOST_IP:2377
 export ETCDCTL_ENDPOINT=http://$HOST_IP:2379
 
 # dtan4-paus-edc8df8
-PROJECT_NAME=$(echo "$1" | tr "/" "-")-$(echo $2 | awk '{ print substr($0, 0, 8) }')
+USER_NAME=$(echo "$3")
+PROJECT_NAME=$USER_NAME-$(echo "$1")-$(echo $2 | awk '{ print substr($0, 0, 8) }')
 
 BASE_DOMAIN=`cat /base-domain`
 
@@ -41,8 +42,14 @@ if [[ -f docker-compose.yml ]]; then
   web_container_port=`docker inspect $web_container_id | jq -r '.[0].NetworkSettings.Ports | .["8080/tcp"] | .[0].HostPort'`
 
   etcdctl set /vulcand/backends/$PROJECT_NAME/backend '{"Type": "http"}' > /dev/null
-  etcdctl set /vulcand/backends/$PROJECT_NAME/servers/$web_container_id "{\"URL\": \"http://$HOST_IP:$web_container_port\"}" > /dev/null
+  etcdctl set /vulcand/backends/$PROJECT_NAME/servers/$web_container_id "{\"URL\": \"http://$web_container_ip:$web_container_port\"}" > /dev/null
   domain=$(etcdctl set /vulcand/frontends/$PROJECT_NAME/frontend "{\"Type\": \"http\", \"BackendId\": \"$PROJECT_NAME\", \"Route\": \"Host(\`$PROJECT_NAME.$BASE_DOMAIN\`) && PathRegexp(\`/\`)\"}" \
+              | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
+
+  echo "=====> $1 was deployed at http://$domain/"
+
+  # username.wantedlyapp.com
+  domain=$(etcdctl set /vulcand/frontends/$USER_NAME/frontend "{\"Type\": \"http\", \"BackendId\": \"$PROJECT_NAME\", \"Route\": \"Host(\`$USER_NAME.$BASE_DOMAIN\`) && PathRegexp(\`/\`)\"}" \
               | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
 
   echo "=====> $1 was deployed at http://$domain/"
