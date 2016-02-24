@@ -37,7 +37,7 @@ if [[ -f docker-compose.yml ]]; then
   docker-compose -p $PROJECT_NAME up -d
 
   web_container_id=`docker-compose -p $PROJECT_NAME ps -q web`
-  web_container_ip=`docker inspect $web_container_id | jq -r .[0].NetworkSettings.IPAddress`
+  web_container_ip=`docker inspect $web_container_id | jq -r '.[0].NetworkSettings.Ports | .["8080/tcp"] | .[0].HostIp'`
   web_container_port=`docker inspect $web_container_id | jq -r '.[0].NetworkSettings.Ports | .["8080/tcp"] | .[0].HostPort'`
 
   etcdctl set /vulcand/backends/$PROJECT_NAME/backend '{"Type": "http"}' > /dev/null
