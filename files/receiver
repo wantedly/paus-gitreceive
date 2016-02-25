@@ -21,9 +21,24 @@ exit_code=0
 # echo "Username: $3"
 # echo "Fingerprint: $4"
 
-mkdir -p /tmp/build/$1 || true
-cat | tar -x -C /tmp/build/$1
-cd /tmp/build/$1
+mkdir -p /tmp/build/$3/$PROJECT_NAME || true
+cat | tar -x -C /tmp/build/$3/$PROJECT_NAME
+
+# NOTE:
+# 各userそれぞれ最新3件のみコンテナが立ち上がっている状態にする
+cd /tmp/build/$3
+
+PROJECT_COUNT=$(ls -1 | wc -l)
+if [[ $PROJECT_COUNT -gt 3 ]]; then
+  OLD_PROJECT=$(ls -rt | head -n 1)
+  cd /tmp/build/$3/$OLD_PROJECT
+  docker-compose -p $OLD_PROJECT stop > /dev/null
+  docker-compose -p $OLD_PROJECT rm > /dev/null
+  cd $BASE_DIR
+  rm -rf /tmp/build/$3/$OLD_PROJECT
+fi
+
+cd /tmp/build/$3/$PROJECT_NAME
 
 if [[ -f docker-compose.yml ]]; then
   echo "=====> docker-compose.yml was detected"
@@ -57,8 +72,5 @@ else
   echo "=====> docker-compose.yml was NOT found!"
   exit_code=1
 fi
-
-cd $BASE_DIR
-rm -rf /tmp/build/$1
 
 exit $exit_code
