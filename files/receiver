@@ -40,10 +40,20 @@ fi
 
 cd /tmp/build/$3/$PROJECT_NAME
 
+# username/projectname
+IMAGE_TAG=$USER_NAME/$1
+
 if [[ -f docker-compose.yml ]]; then
   echo "=====> docker-compose.yml was detected"
 
+  echo "=====> Building Dockerfile..."
+  docker build -t $IMAGE_TAG build .
+
+  echo "=====> Pushing image..."
+  docker push localhost:5000/$IMAGE_TAG
+
   echo "=====> Building..."
+  sed -i -e "s/build:.*/image: localhost:5000\/$USER_NAME\/$1/g" docker-compose.yml
   docker-compose -p $PROJECT_NAME build
 
   echo "=====> Pulling..."
