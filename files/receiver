@@ -49,10 +49,10 @@ if [[ -f docker-compose.yml ]]; then
   echo "=====> docker-compose.yml was detected"
 
   echo "=====> Building Dockerfile..."
-  docker build -t $IMAGE_TAG build .
+  docker -H tcp://$HOST_IP:2375 build -t $IMAGE_TAG build .
 
   echo "=====> Pushing image..."
-  docker push localhost:5000/$IMAGE_TAG
+  docker -H tcp://$HOST_IP:2375 push localhost:5000/$IMAGE_TAG
 
   echo "=====> Building..."
   sed -i -e "s/build:.*/image: localhost:5000\/$USER_NAME\/$REPOSITORY/g" docker-compose.yml
