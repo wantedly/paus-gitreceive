@@ -34,8 +34,8 @@ PROJECT_COUNT=$(ls -1 | wc -l)
 if [[ $PROJECT_COUNT -gt 3 ]]; then
   OLD_PROJECT=$(ls -rt | head -n 1)
   cd /tmp/build/$USER_NAME/$OLD_PROJECT
-  docker-compose -p $OLD_PROJECT stop > /dev/null
-  docker-compose -p $OLD_PROJECT rm > /dev/null
+  docker-compose -p $OLD_PROJECT stop > /dev/null || true
+  docker-compose -p $OLD_PROJECT rm -f > /dev/null || true
   cd $BASE_DIR
   rm -rf /tmp/build/$USER_NAME/$OLD_PROJECT
 fi
@@ -81,6 +81,9 @@ if [[ -f docker-compose.yml ]]; then
               | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
 
   echo "=====> $REPOSITORY was deployed at https://$domain/"
+
+  # docker-compose.yml以外消す
+  ls | grep -v "docker-compose.yml" | xargs rm -rf
 else
   echo "=====> docker-compose.yml was NOT found!"
   exit_code=1
