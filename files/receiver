@@ -34,8 +34,8 @@ PROJECT_COUNT=$(ls -1 | wc -l)
 if [[ $PROJECT_COUNT -gt 3 ]]; then
   OLD_PROJECT=$(ls -rt | head -n 1)
   cd /tmp/build/$USER_NAME/$OLD_PROJECT
-  docker-compose -p $OLD_PROJECT stop > /dev/null
-  docker-compose -p $OLD_PROJECT rm > /dev/null
+  docker-compose -p $OLD_PROJECT stop > /dev/null || true
+  docker-compose -p $OLD_PROJECT rm -f > /dev/null || true
   cd $BASE_DIR
   rm -rf /tmp/build/$USER_NAME/$OLD_PROJECT
 fi
