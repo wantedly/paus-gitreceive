@@ -74,13 +74,13 @@ if [[ -f docker-compose.yml ]]; then
   domain=$(etcdctl set /vulcand/frontends/$PROJECT_NAME/frontend "{\"Type\": \"http\", \"BackendId\": \"$PROJECT_NAME\", \"Route\": \"Host(\`$PROJECT_NAME.$BASE_DOMAIN\`) && PathRegexp(\`/\`)\"}" \
               | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
 
-  echo "=====> $REPOSITORY was deployed at http://$domain/"
+  echo "=====> $REPOSITORY was deployed at https://$domain/"
 
   # username.wantedlyapp.com
   domain=$(etcdctl set /vulcand/frontends/$USER_NAME/frontend "{\"Type\": \"http\", \"BackendId\": \"$PROJECT_NAME\", \"Route\": \"Host(\`$USER_NAME.$BASE_DOMAIN\`) && PathRegexp(\`/\`)\"}" \
               | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
 
-  echo "=====> $REPOSITORY was deployed at http://$domain/"
+  echo "=====> $REPOSITORY was deployed at https://$domain/"
 else
   echo "=====> docker-compose.yml was NOT found!"
   exit_code=1
