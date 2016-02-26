@@ -81,6 +81,9 @@ if [[ -f docker-compose.yml ]]; then
               | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
 
   echo "=====> $REPOSITORY was deployed at https://$domain/"
+
+  # docker-compose.yml以外消す
+  ls | grep -v "docker-compose.yml" | xargs rm -rf
 else
   echo "=====> docker-compose.yml was NOT found!"
   exit_code=1
