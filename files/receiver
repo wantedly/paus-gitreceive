@@ -23,24 +23,24 @@ exit_code=0
 # echo "Username: $3"
 # echo "Fingerprint: $4"
 
-mkdir -p /tmp/build/$USER_NAME/$PROJECT_NAME || true
-cat | tar -x -C /tmp/build/$USER_NAME/$PROJECT_NAME
+mkdir -p /repos/$USER_NAME/$PROJECT_NAME || true
+cat | tar -x -C /repos/$USER_NAME/$PROJECT_NAME
 
 # NOTE:
 # 各userそれぞれ最新3件のみコンテナが立ち上がっている状態にする
-cd /tmp/build/$USER_NAME
+cd /repos/$USER_NAME
 
 PROJECT_COUNT=$(ls -1 | wc -l)
 if [[ $PROJECT_COUNT -gt 3 ]]; then
   OLD_PROJECT=$(ls -rt | head -n 1)
-  cd /tmp/build/$USER_NAME/$OLD_PROJECT
+  cd /repos/$USER_NAME/$OLD_PROJECT
   docker-compose -p $OLD_PROJECT stop > /dev/null || true
   docker-compose -p $OLD_PROJECT rm -f > /dev/null || true
   cd $BASE_DIR
-  rm -rf /tmp/build/$USER_NAME/$OLD_PROJECT
+  rm -rf /repos/$USER_NAME/$OLD_PROJECT
 fi
 
-cd /tmp/build/$USER_NAME/$PROJECT_NAME
+cd /repos/$USER_NAME/$PROJECT_NAME
 
 # username/projectname
 IMAGE_TAG=$USER_NAME/$REPOSITORY
