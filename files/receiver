@@ -38,6 +38,9 @@ if [[ $PROJECT_COUNT -gt 3 ]]; then
   docker-compose -p $OLD_PROJECT rm -f > /dev/null || true
   cd $BASE_DIR
   rm -rf /repos/$USER_NAME/$OLD_PROJECT
+
+  etcdctl rm /vulcand/backends/$OLD_PROJECT --recursive || true
+  etcdctl rm /vulcand/frontends/$OLD_PROJECT --recursive || true
 fi
 
 cd /repos/$USER_NAME/$PROJECT_NAME
