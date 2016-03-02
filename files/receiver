@@ -60,7 +60,6 @@ echo "=====> docker-compose.yml was detected"
 printf '' > new-docker-compose.yml
 
 IMG_ID=0
-# 空白ではなく改行で区切る
 IFS=$'\n'
 
 for line in `cat docker-compose.yml`
