@@ -25,7 +25,7 @@ RUN wget -qO /tmp/etcd-v$ETCD_VERSION-linux-amd64.tar.gz https://github.com/core
 RUN wget -qO /usr/local/bin/gitreceive https://raw.githubusercontent.com/progrium/gitreceive/$GITRECEIVE_COMMIT/gitreceive && \
     chmod +x /usr/local/bin/gitreceive
 
-RUN mkdir -p /repos && chown git /repos
+RUN mkdir -p /repos && chmod 777 /repos
 
 COPY files/sshd_config /etc/ssh/
 

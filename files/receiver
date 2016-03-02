@@ -60,14 +60,11 @@ echo "=====> docker-compose.yml was detected"
 printf '' > new-docker-compose.yml
 
 IMG_ID=0
-# 空白ではなく改行で区切る
 IFS=$'\n'
 
 for line in `cat docker-compose.yml`
 do
-  echo "line = $line"
   build_dir=$(echo $line | awk '/build:/ { print $2 }')
-  echo "build_dir = $build_dir"
   if [ ${build_dir} != 0 ]; then
     IMG_ID=$(( $IMG_ID + 1 ))
     printf "=====> Building Dockerfile..."
@@ -95,23 +92,28 @@ docker-compose -p $PROJECT_NAME pull
 echo "=====> Deploying..."
 docker-compose -p $PROJECT_NAME up -d
 
-web_container_id=`docker-compose -p $PROJECT_NAME ps -q web`
-web_container_host_ip=`docker inspect $web_container_id | jq -r '.[0].NetworkSettings.Ports | .["8080/tcp"] | .[0].HostIp'`
-web_container_port=`docker inspect $web_container_id | jq -r '.[0].NetworkSettings.Ports | .["8080/tcp"] | .[0].HostPort'`
+web_container_names=`docker-compose -p $PROJECT_NAME ps | awk '/->8080/ { print $1 }'`
+domin=""
 
-etcdctl set /vulcand/backends/$PROJECT_NAME/backend '{"Type": "http"}' > /dev/null
-etcdctl set /vulcand/backends/$PROJECT_NAME/servers/$web_container_id "{\"URL\": \"http://$web_container_host_ip:$web_container_port\"}" > /dev/null
-domain=$(etcdctl set /vulcand/frontends/$PROJECT_NAME/frontend "{\"Type\": \"http\", \"BackendId\": \"$PROJECT_NAME\", \"Route\": \"Host(\`$PROJECT_NAME.$BASE_DOMAIN\`) && PathRegexp(\`/\`)\"}" \
+for web_container_name in web_container_names
+do
+
+  web_container_host_ip=`docker inspect $web_container_name | jq -r '.[0].NetworkSettings.Ports | .["8080/tcp"] | .[0].HostIp'`
+  web_container_port=`docker inspect $web_container_name | jq -r '.[0].NetworkSettings.Ports | .["8080/tcp"] | .[0].HostPort'`
+
+  etcdctl set /vulcand/backends/$PROJECT_NAME/backend '{"Type": "http"}' > /dev/null
+  etcdctl set /vulcand/backends/$PROJECT_NAME/servers/$web_container_id "{\"URL\": \"http://$web_container_host_ip:$web_container_port\"}" > /dev/null
+  domain=$(etcdctl set /vulcand/frontends/$PROJECT_NAME/frontend "{\"Type\": \"http\", \"BackendId\": \"$PROJECT_NAME\", \"Route\": \"Host(\`$PROJECT_NAME.$BASE_DOMAIN\`) && PathRegexp(\`/\`)\"}" \
             | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
 
-echo "=====> $REPOSITORY was deployed at https://$domain/"
+  echo "=====> $REPOSITORY was deployed at https://$domain/"
+done
 
 # username.wantedlyapp.com
 domain=$(etcdctl set /vulcand/frontends/$USER_NAME/frontend "{\"Type\": \"http\", \"BackendId\": \"$PROJECT_NAME\", \"Route\": \"Host(\`$USER_NAME.$BASE_DOMAIN\`) && PathRegexp(\`/\`)\"}" \
             | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
 
 echo "=====> $REPOSITORY was deployed at https://$domain/"
-
 # docker-compose.yml以外消す
 ls | grep -v "docker-compose.yml" | xargs rm -rf
 
