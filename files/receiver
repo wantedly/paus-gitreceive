@@ -52,15 +52,30 @@ IMAGE_TAG=$USER_NAME/$REPOSITORY
 if [[ -f docker-compose.yml ]]; then
   echo "=====> docker-compose.yml was detected"
 
-  echo "=====> Building Dockerfile..."
-  docker -H tcp://$HOST_IP:2375 build -t $IMAGE_TAG .
-  docker -H tcp://$HOST_IP:2375 tag -f $IMAGE_TAG localhost:5000/$IMAGE_TAG
+  printf '' > new-docker-compose.yml
 
-  echo "=====> Pushing image..."
-  docker -H tcp://$HOST_IP:2375 push localhost:5000/$IMAGE_TAG
+  IMG_ID=0
+  cat docker-compose.yml | while IFS='' read -r line
+  do
+    build_dir=$(expr "$line" : ' *build: *\(.*\)')
+    if [ ${#build_dir} != 0 ]; then
+      (( IMG_ID++ ))
+      echo "=====> Building Dockerfile..."
+      docker -H tcp://$HOST_IP:2375 build -t $IMAGE_TAG$IMG_ID $build_dir
+      docker -H tcp://$HOST_IP:2375 tag -f $IMAGE_TAG$IMG_ID localhost:5000/$IMAGE_TAG$IMG_ID
+
+      echo "=====> Pushing image..."
+      docker -H tcp://$HOST_IP:2375 push localhost:5000/$IMAGE_TAG$IMG_ID
+
+      printf "%s\n" "$line" | sed -e "s/build:.*/image: localhost:5000\/$IMAGE_TAG$IMG_ID/g" >> new-docker-compose.yml
+    else
+      printf "%s\n" "$line" >> new-docker-compose.yml
+    fi
+  done
+
+  mv -f new-docker-compose.yml docker-compose.yml
 
   echo "=====> Building..."
-  sed -i -e "s/build:.*/image: localhost:5000\/$USER_NAME\/$REPOSITORY/g" docker-compose.yml
   docker-compose -p $PROJECT_NAME build
 
   echo "=====> Pulling..."
