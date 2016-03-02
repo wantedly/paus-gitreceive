@@ -49,63 +49,70 @@ cd /repos/$USER_NAME/$PROJECT_NAME
 # username/projectname
 IMAGE_TAG=$USER_NAME/$REPOSITORY
 
-if [[ -f docker-compose.yml ]]; then
-  echo "=====> docker-compose.yml was detected"
-
-  printf '' > new-docker-compose.yml
-
-  IMG_ID=0
-  cat docker-compose.yml | while IFS='' read -r line
-  do
-    build_dir=$(expr "$line" : ' *build: *\(.*\)')
-    if [ ${#build_dir} != 0 ]; then
-      (( IMG_ID++ ))
-      echo "=====> Building Dockerfile..."
-      docker -H tcp://$HOST_IP:2375 build -t $IMAGE_TAG$IMG_ID $build_dir
-      docker -H tcp://$HOST_IP:2375 tag -f $IMAGE_TAG$IMG_ID localhost:5000/$IMAGE_TAG$IMG_ID
-
-      echo "=====> Pushing image..."
-      docker -H tcp://$HOST_IP:2375 push localhost:5000/$IMAGE_TAG$IMG_ID
-
-      printf "%s\n" "$line" | sed -e "s/build:.*/image: localhost:5000\/$IMAGE_TAG$IMG_ID/g" >> new-docker-compose.yml
-    else
-      printf "%s\n" "$line" >> new-docker-compose.yml
-    fi
-  done
-
-  mv -f new-docker-compose.yml docker-compose.yml
-
-  echo "=====> Building..."
-  docker-compose -p $PROJECT_NAME build
-
-  echo "=====> Pulling..."
-  docker-compose -p $PROJECT_NAME pull
-
-  echo "=====> Deploying..."
-  docker-compose -p $PROJECT_NAME up -d
-
-  web_container_id=`docker-compose -p $PROJECT_NAME ps -q web`
-  web_container_host_ip=`docker inspect $web_container_id | jq -r '.[0].NetworkSettings.Ports | .["8080/tcp"] | .[0].HostIp'`
-  web_container_port=`docker inspect $web_container_id | jq -r '.[0].NetworkSettings.Ports | .["8080/tcp"] | .[0].HostPort'`
-
-  etcdctl set /vulcand/backends/$PROJECT_NAME/backend '{"Type": "http"}' > /dev/null
-  etcdctl set /vulcand/backends/$PROJECT_NAME/servers/$web_container_id "{\"URL\": \"http://$web_container_host_ip:$web_container_port\"}" > /dev/null
-  domain=$(etcdctl set /vulcand/frontends/$PROJECT_NAME/frontend "{\"Type\": \"http\", \"BackendId\": \"$PROJECT_NAME\", \"Route\": \"Host(\`$PROJECT_NAME.$BASE_DOMAIN\`) && PathRegexp(\`/\`)\"}" \
-              | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
-
-  echo "=====> $REPOSITORY was deployed at https://$domain/"
-
-  # username.wantedlyapp.com
-  domain=$(etcdctl set /vulcand/frontends/$USER_NAME/frontend "{\"Type\": \"http\", \"BackendId\": \"$PROJECT_NAME\", \"Route\": \"Host(\`$USER_NAME.$BASE_DOMAIN\`) && PathRegexp(\`/\`)\"}" \
-              | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
-
-  echo "=====> $REPOSITORY was deployed at https://$domain/"
-
-  # docker-compose.yml以外消す
-  ls | grep -v "docker-compose.yml" | xargs rm -rf
-else
+# Not found docker-compose.yml in repos root
+if [[ ! -f docker-compose.yml ]]; then
   echo "=====> docker-compose.yml was NOT found!"
   exit_code=1
 fi
+
+echo "=====> docker-compose.yml was detected"
+
+printf '' > new-docker-compose.yml
+
+IMG_ID=0
+# 空白ではなく改行で区切る
+IFS=$'\n'
+
+for line in `cat docker-compose.yml`
+do
+  echo "line = $line"
+  build_dir=$(echo $line | awk '/build:/ { print $2 }')
+  echo "build_dir = $build_dir"
+  if [ ${build_dir} != 0 ]; then
+    IMG_ID=$(( $IMG_ID + 1 ))
+    printf "=====> Building Dockerfile..."
+    docker -H tcp://$HOST_IP:2375 build -t $IMAGE_TAG$IMG_ID $build_dir
+    docker -H tcp://$HOST_IP:2375 tag -f $IMAGE_TAG$IMG_ID localhost:5000/$IMAGE_TAG$IMG_ID
+
+    printf "=====> Pushing image..."
+    docker -H tcp://$HOST_IP:2375 push localhost:5000/$IMAGE_TAG$IMG_ID
+
+    echo $line | sed -e "s@build:.*@image: localhost:5000\/$IMAGE_TAG$IMG_ID@g" >> new-docker-compose.yml
+  else
+    printf "%s\n" "$line" >> new-docker-compose.yml
+  fi
+done
+
+
+mv -f new-docker-compose.yml docker-compose.yml
+
+echo "=====> Building..."
+docker-compose -p $PROJECT_NAME build
+
+echo "=====> Pulling..."
+docker-compose -p $PROJECT_NAME pull
+
+echo "=====> Deploying..."
+docker-compose -p $PROJECT_NAME up -d
+
+web_container_id=`docker-compose -p $PROJECT_NAME ps -q web`
+web_container_host_ip=`docker inspect $web_container_id | jq -r '.[0].NetworkSettings.Ports | .["8080/tcp"] | .[0].HostIp'`
+web_container_port=`docker inspect $web_container_id | jq -r '.[0].NetworkSettings.Ports | .["8080/tcp"] | .[0].HostPort'`
+
+etcdctl set /vulcand/backends/$PROJECT_NAME/backend '{"Type": "http"}' > /dev/null
+etcdctl set /vulcand/backends/$PROJECT_NAME/servers/$web_container_id "{\"URL\": \"http://$web_container_host_ip:$web_container_port\"}" > /dev/null
+domain=$(etcdctl set /vulcand/frontends/$PROJECT_NAME/frontend "{\"Type\": \"http\", \"BackendId\": \"$PROJECT_NAME\", \"Route\": \"Host(\`$PROJECT_NAME.$BASE_DOMAIN\`) && PathRegexp(\`/\`)\"}" \
+            | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
+
+echo "=====> $REPOSITORY was deployed at https://$domain/"
+
+# username.wantedlyapp.com
+domain=$(etcdctl set /vulcand/frontends/$USER_NAME/frontend "{\"Type\": \"http\", \"BackendId\": \"$PROJECT_NAME\", \"Route\": \"Host(\`$USER_NAME.$BASE_DOMAIN\`) && PathRegexp(\`/\`)\"}" \
+            | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
+
+echo "=====> $REPOSITORY was deployed at https://$domain/"
+
+# docker-compose.yml以外消す
+ls | grep -v "docker-compose.yml" | xargs rm -rf
 
 exit $exit_code
