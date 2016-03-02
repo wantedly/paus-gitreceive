@@ -64,9 +64,7 @@ IFS=$'\n'
 
 for line in `cat docker-compose.yml`
 do
-  echo "line = $line"
   build_dir=$(echo $line | awk '/build:/ { print $2 }')
-  echo "build_dir = $build_dir"
   if [ ${build_dir} != 0 ]; then
     IMG_ID=$(( $IMG_ID + 1 ))
     printf "=====> Building Dockerfile..."
