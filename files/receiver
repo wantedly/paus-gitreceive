@@ -65,7 +65,7 @@ IFS=$'\n'
 for line in `cat docker-compose.yml`
 do
   build_dir=$(echo $line | awk '/build:/ { print $2 }')
-  if [ ${build_dir} != 0 ]; then
+  if [ ${#build_dir} != 0 ]; then
     IMG_ID=$(( $IMG_ID + 1 ))
     printf "=====> Building Dockerfile..."
     docker -H tcp://$HOST_IP:2375 build -t $IMAGE_TAG$IMG_ID $build_dir
