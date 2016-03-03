@@ -9,7 +9,7 @@ export DOCKER_HOST=tcp://$HOST_IP:2377
 export ETCDCTL_ENDPOINT=http://$HOST_IP:2379
 
 # dtan4-paus-edc8df8
-REPOSITORY=$(echo "$1")
+REPOSITORY=$(echo "$1" | sed -e "s@\/@-@g")
 REVISION=$(echo "$2")
 USER_NAME=$(echo "$3")
 PROJECT_NAME=$USER_NAME-$REPOSITORY-$(echo $REVISION | awk '{ print substr($0, 0, 8) }')
