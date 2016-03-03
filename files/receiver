@@ -12,7 +12,7 @@ export ETCDCTL_ENDPOINT=http://$HOST_IP:2379
 REPOSITORY=$(echo "$1" | sed -e "s@\/@-@g")
 REVISION=$(echo "$2")
 USER_NAME=$(echo "$3")
-PROJECT_NAME=$USER_NAME-$REPOSITORY-$(echo $REVISION | awk '{ print substr($0, 0, 8) }')
+PROJECT_NAME=$REPOSITORY-$(echo $REVISION | awk '{ print substr($0, 0, 8) }')
 
 BASE_DOMAIN=`cat /base-domain`
 
