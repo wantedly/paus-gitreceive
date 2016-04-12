@@ -109,6 +109,12 @@ domain=$(etcdctl set /vulcand/frontends/$USER_NAME/frontend "{\"Type\": \"http\"
 
 echo "=====> $REPOSITORY was deployed at https://$domain/"
 
+# appname.wantedlyapp.com
+domain=$(etcdctl set /vulcand/frontends/$REPOSITORY/frontend "{\"Type\": \"http\", \"BackendId\": \"$PROJECT_NAME\", \"Route\": \"Host(\`$REPOSITORY.$BASE_DOMAIN\`) && PathRegexp(\`/\`)\"}" \
+            | jq -r .Route | sed -E "s/Host\(\`(.+?)\`\).+/\1/")
+
+echo "=====> $REPOSITORY was deployed at https://$domain/"
+
 # docker-compose.yml以外消す
 ls | grep -v "docker-compose.yml" | xargs rm -rf
 
